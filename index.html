@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Recorder with Animated Interface</title>
+    <style>
+      /* Global Styles */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Arial", sans-serif;
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        text-align: center;
+        margin-bottom: 20px;
+        animation: fadeInDown 1s ease-out;
+      }
+
+      video {
+        width: 100%;
+        max-width: 600px;
+        height: auto;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        animation: zoomIn 1s ease-out;
+      }
+
+      button {
+        background: #f857a6;
+        border: none;
+        color: #fff;
+        padding: 10px 20px;
+        font-size: 1rem;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s, background-color 0.3s;
+        animation: fadeInUp 1.5s ease-out;
+      }
+
+      button:hover {
+        transform: scale(1.1);
+        background: #d94682;
+      }
+
+      a {
+        display: none;
+        color: #fff;
+        text-decoration: none;
+        font-size: 1rem;
+        margin-top: 10px;
+        animation: fadeIn 1s ease-out;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      #nextBtn {
+        background-color: #2575fc;
+        display: none; /* Hidden initially */
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 2rem;
+        }
+
+        button {
+          font-size: 0.9rem;
+          padding: 8px 16px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        h1 {
+          font-size: 1.5rem;
+        }
+
+        button {
+          font-size: 0.8rem;
+          padding: 6px 12px;
+        }
+      }
+
+      /* Animations */
+      @keyframes fadeInDown {
+        0% {
+          opacity: 0;
+          transform: translateY(-50px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes zoomIn {
+        0% {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes fadeInUp {
+        0% {
+          opacity: 0;
+          transform: translateY(50px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeIn {
+        0% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Record Your Video</h1>
+    <video id="video" autoplay muted></video>
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop Recording</button>
+    <a id="downloadLink">Download Video</a>
+    <button id="nextBtn">Next</button>
+    <!-- Next Button -->
+
+    <script>
+      const video = document.getElementById("video");
+      const startBtn = document.getElementById("startBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const downloadLink = document.getElementById("downloadLink");
+      const nextBtn = document.getElementById("nextBtn"); // Next button element
+
+      let mediaRecorder;
+      let recordedChunks = [];
+
+      // Set up the camera and request permissions
+      async function setupCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
+          video.srcObject = stream; // Assign the stream to the video element
+          return stream; // Return the stream for further use
+        } catch (error) {
+          console.error("Error accessing camera:", error);
+          alert(
+            "Unable to access the camera. Please check your device settings and permissions."
+          );
+        }
+      }
+
+      startBtn.addEventListener("click", async () => {
+        const stream = await setupCamera();
+        if (!stream) return; // If no stream, stop execution
+
+        mediaRecorder = new MediaRecorder(stream);
+        recordedChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: "video/webm" });
+          const url = URL.createObjectURL(blob);
+
+          downloadLink.href = url;
+          downloadLink.download = "recorded-video.webm";
+          downloadLink.style.display = "block"; // Show the download link
+          downloadLink.textContent = "Download Your Video";
+
+          nextBtn.style.display = "inline-block"; // Show the Next button after recording is finished
+        };
+
+        mediaRecorder.start();
+        startBtn.disabled = true; // Disable start button
+        stopBtn.disabled = false; // Enable stop button
+      });
+
+      stopBtn.addEventListener("click", () => {
+        if (mediaRecorder) {
+          mediaRecorder.stop(); // Stop recording
+        }
+        startBtn.disabled = false; // Re-enable start button
+        stopBtn.disabled = true; // Disable stop button
+      });
+
+      nextBtn.addEventListener("click", () => {
+        // This is the "Next" button functionality
+        alert("Proceeding to the next step.");
+        // Add functionality for the "Next" button, like redirecting to a new page or showing new content.
+        // For example:
+        // window.location.href = "nextPage.html"; // Uncomment this to redirect to another page
+      });
+
+      // Automatically request permissions on page load
+      window.addEventListener("load", () => {
+        setupCamera();
+      });
+    </script>
+  </body>
+</html>
